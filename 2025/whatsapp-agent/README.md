@@ -9,7 +9,7 @@ This project demonstrates how to set up an AI-powered WhatsApp bot using n8n. Wi
 ## Tutorial
 
 This implementation follows the tutorial available on YouTube:
-[Adding AI Agents to WhatsApp using n8n](https://youtu.be/dZe6dKMS-vY)
+[Adding AI Agents to WhatsApp using n8n](https://youtu.be/LekI91ISf_8)
 
 ## Fix mime type
 
