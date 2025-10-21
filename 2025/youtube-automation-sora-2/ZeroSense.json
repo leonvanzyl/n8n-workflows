@@ -1,0 +1,411 @@
+{
+  "name": "ZeroSense",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1024,
+        -224
+      ],
+      "id": "f091a3e3-d134-40fc-8b86-558a429152af",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/videos",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "prompt",
+              "value": "={{ $json.output.script }}"
+            },
+            {
+              "name": "model",
+              "value": "sora-2"
+            },
+            {
+              "name": "size",
+              "value": "720x1280"
+            },
+            {
+              "name": "seconds",
+              "value": "8"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -256,
+        -64
+      ],
+      "id": "195e69ed-4b73-4bcf-abd3-d5641ac6cc0f",
+      "name": "Generate Video",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "OmHigTWfPyRxdRpE",
+          "name": "OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.openai.com/v1/videos/{{ $json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        16,
+        -64
+      ],
+      "id": "59122321-15f6-424a-b8cb-b23495e16ea6",
+      "name": "Check Status",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "OmHigTWfPyRxdRpE",
+          "name": "OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.openai.com/v1/videos/{{ $json.id }}/content",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        592,
+        -80
+      ],
+      "id": "cfa37b18-0cef-468e-805c-a902cc699f4d",
+      "name": "Download Video",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "OmHigTWfPyRxdRpE",
+          "name": "OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c88e3d2b-c6c3-4fde-9bd8-c54c8c33ff4a",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        -64
+      ],
+      "id": "dad37c52-4388-41ba-8f36-bb4cc27cfe12",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        416,
+        80
+      ],
+      "id": "06cc337a-3ad4-48ba-b630-1275a9881493",
+      "name": "Wait",
+      "webhookId": "0947f596-b46a-468f-96ef-2faec125b8d8"
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $('Basic LLM Chain').item.json.output.title }}",
+        "regionCode": "US",
+        "categoryId": "23",
+        "options": {
+          "description": "={{ $('Basic LLM Chain').item.json.output.description }}",
+          "selfDeclaredMadeForKids": false
+        }
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        800,
+        -80
+      ],
+      "id": "83235d8d-2b16-48a5-9b95-f7702eb03403",
+      "name": "Upload a video",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "XuEayq9O4HWHSFqV",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "Create a script.",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=# Role\n\nYou are an expert AI scriptwriter for 8-second micro-documentaries.\nYou write serious, authoritative narration for short clips where the “fact” is confidently incorrect in a way that feels almost plausible.\n\n# Purpose\n\nCreate documentary-style, deadpan narrations that pair with generic B-roll (animals, nature, space, everyday objects, inventions, life-hacks, history). The humour comes from credible-sounding nonsense that makes viewers replay to process the error.\n\n# Non-Negotiables\n\nOpen with authority: Start with “Did you know…” (or a close variant like “Scientists say…”, “Experts believe…”). Prefer “Did you know…” by default.\n\nBelievably wrong: Use near-truth twists (misattributed causes, swapped mechanisms, off-by-one logic, category errors, misread jargon). Avoid random, disconnected absurdity.\n\nDeadpan documentary tone: No winks, no punchline cadence, no dialogue. It should sound educational.\n\n8 seconds max: Write for ~18–26 spoken words (≈2.3–3.2 words/sec). If in doubt, tighten.\n\nB-roll friendly: The line should pair cleanly with common footage of the subject mentioned.\n\nUniversal & safe: PG-13. No politics, health/medical claims, religion, identity, or dangerous/imitable “hacks” (e.g., heat, electricity, blades, chemicals, stunts). No encouragement of illegal acts.\n\n# Craft Principles\n\nProximity to truth: Anchor to a real attribute, then bend it (e.g., “penguins wear natural tuxedos” → tweak purpose or mechanism, not species or setting).\n\nOne clean claim: One idea, one scene. Don’t stack facts.\n\nCausal reversals: Swap cause/effect in a subtle way.\n\nMisapplied terms: Use real jargon slightly wrong (e.g., “solar panels store moonlight”).\n\nScale & units slips: Small, plausible-sounding numerics (e.g., “99% of clouds are recycled each week”).\n\nEtymology traps: Confident but wrong origins (“sandwich named after the inventor, Sandy Witch”).\n\nTime & history fog: Off-by-century with confidence.\n\n# Output Format\n\nReturn a JSON object with exactly these properties:\n\nScript (the narrator’s single sentence)\n\nTitle (max 8 words)\n\nDescription (short; include 3 hashtags)\n\n# Writing Template (internal guidance; don’t output this)\n\nScript begins: “Did you know …”\n\nWords: 18–26\n\nTone: calm, informative, certain\n\nContent: one specific subject that matches easy B-roll\n\nBetter, Believable-Wrong Examples\n\n(These are examples only; your actual outputs must follow the JSON format above.)\n\nNature – Bees\nVoice-over: “Did you know bees make honey mostly at night, because sunlight melts the recipe during the day?”\n— Anchors to honey/temperature; wrong mechanism.\n\nSpace – Moon\nVoice-over: “Did you know the Moon looks bigger near the horizon because Earth’s atmosphere works like a magnifying glass set to ‘zoom’?”\n— Plays on the real Moon illusion; wrong cause.\n\nAnimals – Owls\nVoice-over: “Did you know owls rotate their heads to cool their brains, like a built-in desk fan?”\n— Real rotation, wrong purpose.\n\nEveryday – Bananas\nVoice-over: “Did you know bananas ripen faster near Wi-Fi, because the signal ‘wakes up’ their sugars?”\n— Sounds techy; harmlessly wrong.\n\nScience – Rainbows\nVoice-over: “Did you know double rainbows happen when clouds copy-paste the first one by accident?”\n— Office metaphor; visually coherent.\n\nHistory – Maps\nVoice-over: “Did you know old maps were drawn with north on top only because printing presses stacked pages that way?”\n— Confident, procedural, wrong.\n\nPlants – Sunflowers\nVoice-over: “Did you know sunflowers face east in the morning to download light more efficiently?”\n— Real heliotropism, tech-wrongness.\n\nEveryday – Keys\nVoice-over: “Did you know metal keys work better when warmed by your pocket, because locks read temperature as a password?”\n— Everyday object, wrong mechanism.\n\nWeather – Wind\nVoice-over: “Did you know wind slows down at night because trees are off the clock?”\n— Personification of a real night/day pattern.\n\nMaterials – Glass\nVoice-over: “Did you know glass is technically a slow liquid, which is why old windows sag from top to bottom?”\n— Classic myth, confidently asserted.\n\n# Quality Checklist (apply before returning)\n\n18–26 words?\n\nStarts with “Did you know…” (or approved variant)?\n\nOne believable-wrong idea, clearly paired to obvious B-roll?\n\nNo danger, no politics/religion/health, no instructions to do risky things?\n\nDeadpan, no punchline wording?\n\n# Example JSON Outputs\n\n(Use this structure for real outputs.)\n\n{\n  \"Script\": \"Did you know bees make honey mostly at night, because sunlight melts the recipe during the day?\",\n  \"Title\": \"Night-Shift Honey\",\n  \"Description\": \"A serious mini-doc that’s confidently wrong. #funfacts #documentary #shorts\"\n}\n\n{\n  \"Script\": \"Did you know the Moon looks bigger near the horizon because Earth’s atmosphere works like a magnifying glass set to ‘zoom’?\",\n  \"Title\": \"Why the Moon ‘Zooms’\",\n  \"Description\": \"Deadpan science—subtly, hilariously wrong. #space #didyouknow #shorts\"\n}\n\n# Description format\n- Write a short, 2 sentence max SEO description for the video.\n- Include a section at the bottom of the description with the text:\n\"DISCLAIMER:\nThis video was generated using AI as a fun experiment to view the world through and LLM's 'eyes'.  It's intended to be odd and factually inaccurate.\"\n\n# IMPORTANT:\n\n- No Captions or On-Screen Text: Never include or suggest subtitles, on-screen words, or text overlays. Scripts are for narration only — visuals are implied through B-roll, not text. The prompt to the video gen model should include something in parenthesis (), like (do not include captions) "
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -640,
+        -64
+      ],
+      "id": "bf0e580c-ff5f-41f4-b9af-3485c36d6126",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5",
+          "mode": "list",
+          "cachedResultName": "gpt-5"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -672,
+        160
+      ],
+      "id": "20bc1c05-9763-4ee7-812d-e28282c791eb",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "QdeCMcBNCWYoSrTz",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"script\": \"A dog jumps off a house roof and lands safely in the swimming pool.  People are standing around and notice this.  First they panic and are afraid, but laugh once the dog lands safely in the pool\",\n\t\"title\": \"My dog just scared the CRAP out of me!\",\n    \"description\": \"This just happened.  My dog got onto the roof and decided to go for a swim! Thank goodness she's fine\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -480,
+        160
+      ],
+      "id": "58153808-774c-42ad-b150-b56039b1d986",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 16
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1040,
+        80
+      ],
+      "id": "94880b80-6f40-4ced-94ae-b812ab5dfb32",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {
+    "Schedule Trigger": [
+      {
+        "json": {
+          "timestamp": "2025-10-17T16:00:49.045+02:00",
+          "Readable date": "October 17th 2025, 4:00:49 pm",
+          "Readable time": "4:00:49 pm",
+          "Day of week": "Friday",
+          "Year": "2025",
+          "Month": "October",
+          "Day of month": "17",
+          "Hour": "16",
+          "Minute": "00",
+          "Second": "49",
+          "Timezone": "Africa/Johannesburg (UTC+02:00)"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Video": {
+      "main": [
+        [
+          {
+            "node": "Check Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Status": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Video": {
+      "main": [
+        [
+          {
+            "node": "Upload a video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Download Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Check Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Generate Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Africa/Johannesburg",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "0b7a2d07-e863-478f-a5ba-5edfd98c45d2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f8ba83c8124c905f71ba95a1dd22d3c23d39851257d26c9ee35ebceec1f917c4"
+  },
+  "id": "ejuJ0RkNqMs9MpkM",
+  "tags": []
+}
